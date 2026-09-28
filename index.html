@@ -392,7 +392,7 @@ async function loadRemoteData(){
 }
 async function uploadDataUrl(dataUrl,path){if(!dataUrl)return null;const blob=await (await fetch(dataUrl)).blob();const r=await fetch(SUPABASE_URL+'/storage/v1/object/sws-photos/'+path,{method:'POST',headers:{...sbHeaders(false),'x-upsert':'true','Content-Type':blob.type||'image/jpeg'},body:blob});if(!r.ok)throw new Error('Не удалось загрузить фото на сервер.');return SUPABASE_URL+'/storage/v1/object/public/sws-photos/'+path;}
 
-let users=[{name:"Стас"},{name:"Юра"},{name:"Артур"}];
+let users=(()=>{try{const saved=JSON.parse(localStorage.getItem(KEY_USERS)||"null");return Array.isArray(saved)&&saved.length?saved:[{name:"Стас"},{name:"Юра"},{name:"Артур"}]}catch(e){return [{name:"Стас"},{name:"Юра"},{name:"Артур"}]}})();
 let current="", role="";
 let adminPassword="";
 const $=id=>document.getElementById(id);

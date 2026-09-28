@@ -428,7 +428,24 @@ async function loginAdmin(){
 function enter(){document.body.classList.add("logged-in");fillWorkers();$("hoursWorker").value=role==="worker"?current:users[0].name;$("purchaseWorker").value=role==="worker"?current:users[0].name;$("expenseWorker").value=role==="worker"?current:users[0].name;$("login").classList.add("hidden");$("app").classList.remove("hidden");$("hello").textContent="Привет, "+current+"!";$("roleBadge").textContent=role==="admin"?"Администратор":"Работник";$("workerPassword").value="";$("adminPassword").value="";const tu=$("tabUsers"),tt=$("tabTools");if(tu)tu.classList.toggle("hidden",role!=="admin");if(tt)tt.classList.toggle("hidden",role!=="admin");["navReports","navTools","navUsers"].forEach(id=>{const el=$(id);if(el)el.classList.toggle("hidden",role!=="admin")});if($("warehouseAdminBlock"))$("warehouseAdminBlock").classList.toggle("hidden",role!=="admin");if($("warehouseMovementAdmin"))$("warehouseMovementAdmin").classList.toggle("hidden",role!=="admin");openTab("hours");setTimeout(()=>getLocation(),350);}
 async function logout(){await sbLogout();document.body.classList.remove("logged-in");current="";role="";$("app").classList.add("hidden");$("login").classList.remove("hidden");$("adminLoginBox").classList.add("hidden");$("adminPassword").value=""}
 
-function openTab(tab){
+async function refreshUsersFromServer(){
+  if(role!=="admin"||!sbSession||!sbUser)return;
+  try{
+    const result=await manageUser("list");
+    const profiles=Array.isArray(result?.users)?result.users:[];
+    users=profiles.filter(p=>p.is_active!==false).map(p=>({
+      id:p.id,name:p.full_name||p.username||"",full_name:p.full_name||"",
+      username:p.username||"",email:p.email||"",role:p.role||"worker",
+      is_active:p.is_active!==false
+    }));
+    localStorage.setItem(KEY_USERS,JSON.stringify(users));
+    fillWorkers();
+    renderUsers();
+  }catch(e){
+    console.warn("Не удалось обновить список пользователей",e);
+  }
+}
+async function openTab(tab){
   if((tab==="reports"||tab==="tools"||tab==="users")&&role!=="admin")return;
   ["hours","plan","materials","objects","purchases","expenses","reports","tools","users"].forEach(x=>{
     const page=$("page"+x[0].toUpperCase()+x.slice(1)); if(page)page.classList.toggle("hidden",x!==tab);
@@ -437,7 +454,8 @@ function openTab(tab){
   const navMap={hours:'navHours',plan:'navPlan',materials:'navMaterials',expenses:'navExpenses',objects:'navObjects',reports:'navReports',tools:'navTools',users:'navUsers'};
   document.querySelectorAll('#dashboardNav .feature-item').forEach(b=>b.classList.remove('active'));
   if(navMap[tab]&&$(navMap[tab]))$(navMap[tab]).classList.add('active');
-  if(tab==="hours")renderHours(); if(tab==="users"&&role==="admin")renderUsers(); if(tab==="plan")renderPlans(); if(tab==="materials")renderMaterials(); if(tab==="objects")renderObjects(); if(tab==="expenses")renderExpenses(); if(tab==="reports")renderReports(); if(tab==="tools"&&role==="admin")renderTools(); if(tab==="users")renderUsers();
+  if(tab==="users"&&role==="admin")await refreshUsersFromServer();
+  if(tab==="hours")renderHours(); if(tab==="plan")renderPlans(); if(tab==="materials")renderMaterials(); if(tab==="objects")renderObjects(); if(tab==="expenses")renderExpenses(); if(tab==="reports")renderReports(); if(tab==="tools"&&role==="admin")renderTools();
 }
 let currentLocation=null;
 
